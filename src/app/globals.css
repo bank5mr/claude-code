@@ -1,0 +1,379 @@
+@import "tailwindcss";
+
+/* ───────── 색 토큰 (라이트) ───────── */
+:root {
+  --paper: #f6f7f3;
+  --surface: #ffffff;
+  --ink: #1b1f24;
+  --muted: #5f6670;
+  --grid: #2f6b4f;
+  --grid-soft: #cfe0d6;
+  --mark: #f2df6b;
+  --line: #daddd6;
+  --danger: #b3261e;
+  /* 주 버튼 글자색. 흰색 on #2F6B4F = 6.29:1 */
+  --on-grid: #ffffff;
+  color-scheme: light;
+}
+
+/* ───────── 색 토큰 (다크) ─────────
+   시스템 설정이 다크이거나, data-theme="dark"가 붙은 경우 */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #15181b;
+    --surface: #1d2125;
+    --ink: #ecedea;
+    --muted: #a3a9b0;
+    --grid: #6fb08c;
+    --grid-soft: #2a3a31;
+    --mark: #6b5e1e;
+    --line: #30353a;
+    --danger: #f2b8b5;
+    /* 흰색 on #6FB08C = 2.54:1 이라 기준 미달 → 짙은 글자 사용 (7.01:1) */
+    --on-grid: #15181b;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #15181b;
+  --surface: #1d2125;
+  --ink: #ecedea;
+  --muted: #a3a9b0;
+  --grid: #6fb08c;
+  --grid-soft: #2a3a31;
+  --mark: #6b5e1e;
+  --line: #30353a;
+  --danger: #f2b8b5;
+  --on-grid: #15181b;
+  color-scheme: dark;
+}
+
+/* ───────── Tailwind 테마 연결 ───────── */
+@theme {
+  /* 기본 팔레트를 비우고 토큰만 쓰도록 */
+  --color-*: initial;
+  /* 브레이크포인트: 600px 이하 = 모바일, sm(601px~) = 데스크톱 */
+  --breakpoint-*: initial;
+  --breakpoint-sm: 601px;
+  /* 그림자는 쓰지 않음 */
+  --shadow-*: initial;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-grid: var(--grid);
+  --color-grid-soft: var(--grid-soft);
+  --color-mark: var(--mark);
+  --color-line: var(--line);
+  --color-danger: var(--danger);
+  --color-on-grid: var(--on-grid);
+
+  --font-sans: var(--font-plex), "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --font-serif: var(--font-gowun), "AppleMyungjo", "Batang", serif;
+
+  /* 타입 스케일 */
+  --text-note: 13px;
+  --text-meta: 14px;
+  --text-body: 16px;
+  --text-item: 19px;
+  --text-item--line-height: 1.35;
+  --text-dialog: 22px;
+  --text-dialog--line-height: 1.35;
+  --text-title: 26px;
+  --text-title--line-height: 1.35;
+
+  /* 모서리 */
+  --radius-ctl: 6px;
+  --radius-dialog: 10px;
+}
+
+/* ───────── 기본 ───────── */
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.6;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+  }
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-serif);
+    font-weight: 700;
+  }
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+  /* 모든 인터랙티브 요소의 포커스 표시 */
+  :focus-visible {
+    outline: 2px solid var(--grid);
+    outline-offset: 2px;
+  }
+  ::selection {
+    background: var(--mark);
+    color: var(--ink);
+  }
+}
+
+/* ───────── 공통 컴포넌트 클래스 ───────── */
+@layer components {
+  /* 960px 콘텐츠 + 좌우 20px 여백, 노치 대응 */
+  .wrap {
+    width: 100%;
+    max-width: calc(960px + 40px);
+    margin-inline: auto;
+    padding-left: max(20px, env(safe-area-inset-left));
+    padding-right: max(20px, env(safe-area-inset-right));
+  }
+  /* 한 줄 최대 약 34em */
+  .measure {
+    max-width: 34em;
+  }
+
+  /* 버튼 */
+  .btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 40px;
+    padding: 9px 16px;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.35;
+    white-space: nowrap;
+    cursor: pointer;
+    transition:
+      background-color 160ms ease,
+      border-color 160ms ease,
+      color 160ms ease,
+      opacity 160ms ease;
+  }
+  .btn-primary {
+    background: var(--grid);
+    color: var(--on-grid);
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--grid) 88%, var(--ink));
+  }
+  .btn-secondary {
+    background: transparent;
+    border-color: var(--line);
+    color: var(--ink);
+    font-weight: 500;
+  }
+  .btn-secondary:hover:not(:disabled) {
+    border-color: var(--muted);
+  }
+  /* 삭제 같은 되돌릴 수 없는 동작 */
+  .btn-danger {
+    background: transparent;
+    border-color: var(--danger);
+    color: var(--danger);
+  }
+  /* 작은 버튼: 보이는 크기는 6px 12px / 14px, 터치 영역은 ::after로 40px 확보 */
+  .btn-sm {
+    min-height: 0;
+    padding: 6px 12px;
+    font-size: 14px;
+  }
+  .btn-sm::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    height: 40px;
+    min-height: 100%;
+    transform: translateY(-50%);
+  }
+  .btn:disabled,
+  .btn[aria-disabled="true"] {
+    opacity: 0.5;
+    cursor: default;
+  }
+  /* 텍스트 버튼 (헤더 "로그인" 등) */
+  .btn-text {
+    background: transparent;
+    color: var(--ink);
+    font-weight: 500;
+    padding-inline: 8px;
+  }
+  .btn-text:hover {
+    color: var(--grid);
+  }
+
+  /* 입력창 */
+  .field-label {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .input {
+    width: 100%;
+    min-height: 40px;
+    padding: 9px 11px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--paper);
+    color: var(--ink);
+    font-size: 16px; /* iOS 확대 방지 위해 16px 유지 */
+    line-height: 1.35;
+    transition: border-color 160ms ease;
+  }
+  .input:hover {
+    border-color: var(--muted);
+  }
+  .input[aria-invalid="true"] {
+    border-color: var(--danger);
+  }
+  .field-error {
+    margin-top: 4px;
+    font-size: 14px;
+    color: var(--danger);
+  }
+
+  /* 형광펜 hover (아래 40%) */
+  .mark-hover {
+    background-image: linear-gradient(transparent 60%, var(--mark) 60%);
+    background-repeat: no-repeat;
+    background-size: 0% 100%;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+    transition: background-size 180ms ease;
+  }
+  .mark-hover:hover,
+  .mark-hover:focus-visible {
+    background-size: 100% 100%;
+  }
+
+  /* 노트 줄무늬 (썸네일: 12px 간격) */
+  .note-lines-12 {
+    background-color: var(--surface);
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 11px,
+      var(--grid-soft) 11px,
+      var(--grid-soft) 12px
+    );
+  }
+  /* 노트 줄무늬 (미리보기: 28px 간격) */
+  .note-lines-28 {
+    background-color: var(--surface);
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 27px,
+      var(--grid-soft) 27px,
+      var(--grid-soft) 28px
+    );
+  }
+
+  /* 로딩 자리표시자 (애니메이션 없음) */
+  .skeleton {
+    background: var(--line);
+    border-radius: 2px;
+  }
+}
+
+/* ───────── 히어로 원고지 등장 애니메이션 (유일한 등장 모션) ───────── */
+@keyframes hero-char-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.hero-char {
+  animation: hero-char-in 220ms ease-out both;
+  animation-delay: calc(var(--i) * 70ms);
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-char {
+    animation: none;
+  }
+}
+
+/* ───────── 다이얼로그 ───────── */
+dialog.dlg {
+  width: min(560px, calc(100vw - 32px));
+  max-width: none;
+  margin: auto;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+}
+dialog.dlg::backdrop {
+  background: rgba(0, 0, 0, 0.45);
+}
+dialog.dlg[open] {
+  animation: dlg-in 180ms ease-out;
+}
+@keyframes dlg-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  dialog.dlg[open] {
+    animation: none;
+  }
+}
+
+/* ───────── 토스트 ───────── */
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.toast-in {
+  animation: toast-in 180ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .toast-in {
+    animation: none;
+  }
+}
+
+/* 파일 입력의 "파일 선택" 버튼을 보조 버튼 모양으로 */
+.file-input::file-selector-button {
+  margin-right: 10px;
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
