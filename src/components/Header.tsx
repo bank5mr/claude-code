@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Logo } from "./Logo";
 import { useCart } from "@/lib/cart";
-import { MOCK_SESSION } from "@/lib/mock";
 
 type NavItem = { href: string; label: string; match: (p: string) => boolean };
 
@@ -14,11 +13,14 @@ const NAV: NavItem[] = [
 ];
 const ADMIN_NAV: NavItem = { href: "/admin", label: "관리", match: (p) => p.startsWith("/admin") };
 
-export function Header() {
+export type HeaderViewer = { isAdmin: boolean } | null;
+
+export function Header({ viewer }: { viewer: HeaderViewer }) {
   const pathname = usePathname();
   const { ids } = useCart();
-  const session = MOCK_SESSION; // TODO(3단계): 실제 로그인 상태
-  const items = session.isAdmin ? [...NAV, ADMIN_NAV] : NAV;
+  const items = viewer?.isAdmin ? [...NAV, ADMIN_NAV] : NAV;
+  // 로그인 후 지금 보던 곳으로 돌아오게
+  const loginHref = pathname === "/" || pathname === "/login" ? "/login" : `/login?next=${encodeURIComponent(pathname)}`;
 
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-paper">
@@ -48,8 +50,8 @@ export function Header() {
           <Link href="/cart" className="btn btn-secondary btn-sm">
             장바구니 <span className="font-semibold text-grid">{ids.length}</span>
           </Link>
-          {!session.loggedIn && (
-            <Link href="/login" className="btn btn-text btn-sm">
+          {!viewer && (
+            <Link href={loginHref} className="btn btn-text btn-sm">
               로그인
             </Link>
           )}

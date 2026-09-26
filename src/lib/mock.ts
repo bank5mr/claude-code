@@ -68,6 +68,3 @@ export const MOCK_PURCHASED_IDS = new Set(["p3"]);
 export function getMockProduct(id: string) {
   return MOCK_PRODUCTS.find((p) => p.id === id) ?? null;
 }
-
-// 목업 로그인 상태 (3단계에서 Supabase Auth로 교체)
-export const MOCK_SESSION = { loggedIn: false, isAdmin: false };

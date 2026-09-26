@@ -4,6 +4,7 @@ import { MOCK_PRODUCTS } from "@/lib/mock";
 import { won } from "@/lib/format";
 import { ProductForm } from "./ProductForm";
 import { AdminProductList } from "./AdminProductList";
+import { requireAdmin } from "@/lib/guard";
 
 export const metadata: Metadata = { title: "관리" };
 
@@ -16,8 +17,9 @@ const MOCK_ORDERS = [
 
 const STATUS_LABEL = { paid: "결제 완료", pending: "대기", failed: "실패" } as const;
 
-// TODO(6단계): 서버에서 is_admin 확인 후 아니면 차단
-export default function AdminPage() {
+// 서버에서 is_admin 확인 (아니면 404)
+export default async function AdminPage() {
+  await requireAdmin();
   return (
     <div className="wrap pt-8">
       <PageTitle>관리</PageTitle>

@@ -4,6 +4,7 @@ import "./globals.css";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { ToastProvider } from "@/components/Toast";
+import { getViewer } from "@/lib/auth";
 
 // 한글 글리프는 Google이 unicode-range 조각으로 나눠 제공한다.
 // 'korean' subset 옵션이 없어서 preload는 끄고, 필요한 조각만 브라우저가 받게 둔다.
@@ -36,12 +37,14 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const viewer = await getViewer();
+
   return (
     <html lang="ko" className={`${gowun.variable} ${plex.variable} antialiased`}>
       <body className="flex min-h-dvh flex-col">
         <ToastProvider>
-          <Header />
+          <Header viewer={viewer ? { isAdmin: viewer.isAdmin } : null} />
           <main className="flex-1">{children}</main>
           <Footer />
         </ToastProvider>
