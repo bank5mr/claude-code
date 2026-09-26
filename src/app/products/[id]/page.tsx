@@ -1,22 +1,22 @@
-/* eslint-disable @next/next/no-img-element -- 목업 SVG. 2단계에서 next/image로 교체 */
 import type { Metadata } from "next";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { CartButton } from "@/components/CartButton";
 import { won } from "@/lib/format";
-import { getMockProduct, MOCK_PURCHASED_IDS } from "@/lib/mock";
+import { getProduct } from "@/lib/products";
 
 export async function generateMetadata(props: PageProps<"/products/[id]">): Promise<Metadata> {
   const { id } = await props.params;
-  const product = getMockProduct(id);
+  const product = await getProduct(id);
   return { title: product?.title ?? "자료" };
 }
 
 export default async function ProductPage(props: PageProps<"/products/[id]">) {
   const { id } = await props.params;
-  const product = getMockProduct(id);
+  const product = await getProduct(id);
   if (!product) notFound();
 
-  const purchased = MOCK_PURCHASED_IDS.has(product.id);
+  const purchased = false; // TODO(5단계): 구매 여부
   const previews = product.previewUrls;
 
   return (
@@ -42,10 +42,14 @@ export default async function ProductPage(props: PageProps<"/products/[id]">) {
                 const last = i === previews.length - 1;
                 return (
                   <li key={src + i} className="relative">
-                    <img
+                    <Image
                       src={src}
                       alt={`${product.title} 미리보기 ${i + 1}쪽`}
-                      className="block w-full border border-line"
+                      width={840}
+                      height={1188}
+                      sizes="(max-width: 600px) 100vw, 700px"
+                      preload={i === 0}
+                      className="block h-auto w-full border border-line"
                     />
                     {last && (
                       <div

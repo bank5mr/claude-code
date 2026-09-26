@@ -2,10 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useId, useState } from "react";
-import { useCart } from "@/lib/cart";
-import { useHydrated } from "@/lib/useHydrated";
+import { useCartProducts } from "@/lib/useCartProducts";
 import { won } from "@/lib/format";
-import { MOCK_PRODUCTS } from "@/lib/mock";
 
 type Errors = Partial<Record<"name" | "email" | "agree", string>>;
 
@@ -14,8 +12,8 @@ const IS_TEST_MODE = true;
 
 export function CheckoutForm() {
   const router = useRouter();
-  const hydrated = useHydrated();
-  const cart = useCart();
+  const { products } = useCartProducts();
+  const hydrated = products !== null;
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [agree, setAgree] = useState(false);
@@ -23,8 +21,7 @@ export function CheckoutForm() {
   const ids = { name: useId(), email: useId(), agree: useId() };
 
   // TODO(4단계): 금액은 서버가 만든 pending 주문의 amount를 쓴다
-  const items = MOCK_PRODUCTS.filter((p) => cart.ids.includes(p.id));
-  const total = items.reduce((s, p) => s + p.price, 0);
+  const total = (products ?? []).reduce((s, p) => s + p.price, 0);
 
   function validate(): Errors {
     const e: Errors = {};

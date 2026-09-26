@@ -8,16 +8,35 @@
 
 ## 로컬 실행
 
+### A. 로컬 Supabase로 (Docker 필요)
+
 ```bash
 npm install
-npm run dev
-# http://localhost:3000
+npm run db:start          # 마이그레이션 + 시드까지 자동 적용
+cp .env.example .env.local
+# db:start가 출력한 API_URL, PUBLISHABLE_KEY, SECRET_KEY를 .env.local에 넣기
+npm run dev               # http://localhost:3000
 ```
+
+스키마를 처음부터 다시 만들려면 `npm run db:reset`.
+
+### B. 클라우드 Supabase 프로젝트로
+
+1. 대시보드 SQL Editor에서 `supabase/migrations/` 파일을 이름 순서대로 실행
+2. 개발용 자료가 필요하면 `supabase/seed.sql`도 실행
+3. `.env.local`에 프로젝트 URL, publishable key, secret key 입력
+4. `npm run dev`
+
+## 폴더
+
+- `supabase/migrations/` 스키마, RLS, Storage 버킷
+- `supabase/seed.sql` 개발용 자료 6개
+- `src/lib/supabase/` Supabase 클라이언트 (server / client / admin)
 
 ## 진행 상황
 
 - [x] 1단계: 프로젝트, 디자인 토큰, 레이아웃, 정적 목업 페이지
-- [ ] 2단계: Supabase 연결, 마이그레이션, RLS, 시드
+- [x] 2단계: Supabase 연결, 마이그레이션, RLS, 시드
 - [ ] 3단계: 로그인
 - [ ] 4단계: 장바구니 + 토스 테스트 결제
 - [ ] 5단계: 내 자료 + signed URL 다운로드

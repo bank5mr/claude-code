@@ -1,17 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useCart } from "@/lib/cart";
-import { useHydrated } from "@/lib/useHydrated";
+import { useCartProducts } from "@/lib/useCartProducts";
 import { won } from "@/lib/format";
-import { MOCK_PRODUCTS } from "@/lib/mock";
 
 export function CartView() {
-  const hydrated = useHydrated();
-  const cart = useCart();
+  const { products: items, cart } = useCartProducts();
 
-  // localStorage를 읽기 전엔 자리표시자
-  if (!hydrated) {
+  // 불러오기 전엔 자리표시자
+  if (items === null) {
     return (
       <div aria-hidden className="border-t border-ink">
         {[0, 1].map((i) => (
@@ -24,8 +21,6 @@ export function CartView() {
     );
   }
 
-  // TODO(4단계): 목업 대신 서버에서 id로 상품 정보를 받아온다
-  const items = MOCK_PRODUCTS.filter((p) => cart.ids.includes(p.id));
   if (items.length === 0) {
     return (
       <div className="border-t border-ink py-12">

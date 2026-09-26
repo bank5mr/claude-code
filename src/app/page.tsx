@@ -1,12 +1,16 @@
 import { Hero } from "@/components/Hero";
 import { ProductBrowser } from "@/components/ProductBrowser";
-import { MOCK_PRODUCTS, MOCK_PURCHASED_IDS } from "@/lib/mock";
+import { getPublishedProducts } from "@/lib/products";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const products = await getPublishedProducts();
+  // TODO(5단계): 로그인 사용자의 구매 자료 id
+  const purchasedIds: string[] = [];
+
   return (
     <div className="wrap">
       <Hero />
-      <ProductBrowser products={MOCK_PRODUCTS} purchasedIds={[...MOCK_PURCHASED_IDS]} />
+      <ProductBrowser products={products} purchasedIds={purchasedIds} />
     </div>
   );
 }
