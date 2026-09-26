@@ -1,11 +1,17 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
+import { createOrderAction } from "./actions";
 import { useCartProducts } from "@/lib/useCartProducts";
 import { won } from "@/lib/format";
 
-export function CartView() {
+export function CartView({ loggedIn }: { loggedIn: boolean }) {
   const { products: items, cart } = useCartProducts();
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
 
   // 불러오기 전엔 자리표시자
   if (items === null) {
@@ -24,6 +30,12 @@ export function CartView() {
   if (items.length === 0) {
     return (
       <div className="border-t border-ink py-12">
+        {/* 결제하기에서 자료가 빠져 장바구니가 빈 경우에도 이유를 보여준다 */}
+        {error && (
+          <p className="mb-2 text-meta text-danger" role="alert">
+            {error}
+          </p>
+        )}
         <p className="text-muted">장바구니가 비었어.</p>
         <Link href="/" className="btn btn-secondary mt-4">
           자료 보러 가기
@@ -64,11 +76,41 @@ export function CartView() {
         <span>합계</span>
         <span>{won(total)}</span>
       </div>
-      <div className="mt-6 flex justify-end">
-        {/* TODO(4단계): 서버 API로 pending 주문 생성 후 이동 */}
-        <Link href="/checkout" className="btn btn-primary">
-          결제하기
-        </Link>
+      <div className="mt-6 flex flex-col items-end gap-2">
+        {loggedIn ? (
+          <button
+            type="button"
+            className="btn btn-primary"
+            disabled={pending}
+            onClick={() => {
+              setError(null);
+              startTransition(async () => {
+                // 서버가 DB 가격으로 주문을 만든다 (여기 보이는 가격은 표시용)
+                const res = await createOrderAction(items.map((p) => p.id));
+                if (res.ok) {
+                  router.push(`/checkout?orderId=${res.orderId}`);
+                  return;
+                }
+                res.removeIds?.forEach((id) => cart.remove(id));
+                setError(res.message);
+              });
+            }}
+          >
+            {pending ? "주문 만드는 중…" : "결제하기"}
+          </button>
+        ) : (
+          <>
+            <Link href="/login?next=/cart" className="btn btn-primary">
+              로그인하고 결제하기
+            </Link>
+            <p className="text-meta text-muted">결제한 자료를 내 자료에 모아 두려면 로그인이 필요해.</p>
+          </>
+        )}
+        {error && (
+          <p className="text-meta text-danger" role="alert">
+            {error}
+          </p>
+        )}
       </div>
     </>
   );

@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import { CartButton } from "@/components/CartButton";
 import { won } from "@/lib/format";
 import { getProduct } from "@/lib/products";
+import { getViewer } from "@/lib/auth";
+import { getPurchasedProductIds } from "@/lib/orders";
 
 export async function generateMetadata(props: PageProps<"/products/[id]">): Promise<Metadata> {
   const { id } = await props.params;
@@ -16,7 +18,8 @@ export default async function ProductPage(props: PageProps<"/products/[id]">) {
   const product = await getProduct(id);
   if (!product) notFound();
 
-  const purchased = false; // TODO(5단계): 구매 여부
+  const viewer = await getViewer();
+  const purchased = viewer ? (await getPurchasedProductIds(viewer.id)).includes(product.id) : false;
   const previews = product.previewUrls;
 
   return (

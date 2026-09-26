@@ -1,27 +1,63 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useId, useState } from "react";
-import { useCartProducts } from "@/lib/useCartProducts";
+import { useEffect, useId, useRef, useState } from "react";
+import { loadTossPayments, type TossPaymentsWidgets } from "@tosspayments/tosspayments-sdk";
 import { won } from "@/lib/format";
 
-type Errors = Partial<Record<"name" | "email" | "agree", string>>;
+type Errors = Partial<Record<"name" | "email" | "agree" | "widget", string>>;
 
-// 1단계 목업: 토스 결제위젯 자리만 잡아 둔다 (4단계에서 연결)
-const IS_TEST_MODE = true;
+type Props = {
+  clientKey: string;
+  customerKey: string;
+  orderId: string;
+  orderName: string;
+  amount: number;
+  defaultName: string;
+  defaultEmail: string;
+};
 
-export function CheckoutForm() {
-  const router = useRouter();
-  const { products } = useCartProducts();
-  const hydrated = products !== null;
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+export function CheckoutForm({
+  clientKey,
+  customerKey,
+  orderId,
+  orderName,
+  amount,
+  defaultName,
+  defaultEmail,
+}: Props) {
+  const [name, setName] = useState(defaultName);
+  const [email, setEmail] = useState(defaultEmail);
   const [agree, setAgree] = useState(false);
   const [errors, setErrors] = useState<Errors>({});
+  const [ready, setReady] = useState(false);
+  const [paying, setPaying] = useState(false);
+  const widgetsRef = useRef<TossPaymentsWidgets | null>(null);
   const ids = { name: useId(), email: useId(), agree: useId() };
+  const isTest = clientKey.startsWith("test_");
 
-  // TODO(4단계): 금액은 서버가 만든 pending 주문의 amount를 쓴다
-  const total = (products ?? []).reduce((s, p) => s + p.price, 0);
+  // 결제위젯 준비: 금액 설정 → 결제수단 UI, 약관 UI 렌더링
+  // 개발 모드(StrictMode)에서 effect가 두 번 돌아도 한 번만 그리도록 ref로 막는다
+  const startedRef = useRef(false);
+  useEffect(() => {
+    if (startedRef.current) return;
+    startedRef.current = true;
+    (async () => {
+      try {
+        const tossPayments = await loadTossPayments(clientKey);
+        const widgets = tossPayments.widgets({ customerKey });
+        // 금액은 서버가 만든 주문 금액 (반드시 렌더링보다 먼저)
+        await widgets.setAmount({ currency: "KRW", value: amount });
+        await Promise.all([
+          widgets.renderPaymentMethods({ selector: "#payment-method", variantKey: "DEFAULT" }),
+          widgets.renderAgreement({ selector: "#agreement", variantKey: "AGREEMENT" }),
+        ]);
+        widgetsRef.current = widgets;
+        setReady(true);
+      } catch {
+        setErrors((e) => ({ ...e, widget: "결제 화면을 불러오지 못했어. 새로고침해 줘." }));
+      }
+    })();
+  }, [clientKey, customerKey, amount]);
 
   function validate(): Errors {
     const e: Errors = {};
@@ -34,11 +70,27 @@ export function CheckoutForm() {
   return (
     <form
       noValidate
-      onSubmit={(ev) => {
+      onSubmit={async (ev) => {
         ev.preventDefault();
         const e = validate();
         setErrors(e);
-        if (Object.keys(e).length === 0) router.push("/checkout/success");
+        if (Object.keys(e).length > 0 || !widgetsRef.current) return;
+        setPaying(true);
+        try {
+          // 결제창 열기. 결과는 successUrl / failUrl로 돌아온다
+          const origin = window.location.origin;
+          await widgetsRef.current.requestPayment({
+            orderId,
+            orderName,
+            successUrl: `${origin}/checkout/success`,
+            failUrl: `${origin}/checkout/fail?order=${encodeURIComponent(orderId)}`,
+            customerEmail: email.trim(),
+            customerName: name.trim(),
+          });
+        } catch {
+          // 결제창을 닫는 등으로 요청이 끝나지 않은 경우: 다시 누를 수 있게
+          setPaying(false);
+        }
       }}
       className="flex flex-col gap-5"
     >
@@ -50,6 +102,7 @@ export function CheckoutForm() {
           id={ids.name}
           className="input"
           autoComplete="name"
+          maxLength={100}
           value={name}
           onChange={(e) => setName(e.target.value)}
           aria-invalid={!!errors.name}
@@ -71,6 +124,7 @@ export function CheckoutForm() {
           type="email"
           inputMode="email"
           autoComplete="email"
+          maxLength={100}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           aria-invalid={!!errors.email}
@@ -84,22 +138,32 @@ export function CheckoutForm() {
       </div>
 
       <div>
-        {IS_TEST_MODE && (
+        {isTest && (
           <p className="mb-3 border border-dashed border-grid px-3 py-2 text-meta">
             테스트 결제야. 실제로 돈이 나가지 않아.
           </p>
         )}
-        {/* TODO(4단계): 토스 결제위젯 renderPaymentMethods / renderAgreement */}
-        <div className="flex flex-col gap-3 border border-line bg-surface p-5" aria-hidden>
-          <div className="skeleton h-5 w-1/3" />
-          <div className="grid grid-cols-3 gap-2">
-            <div className="skeleton h-12" />
-            <div className="skeleton h-12" />
-            <div className="skeleton h-12" />
-          </div>
-          <div className="skeleton h-4 w-2/3" />
-          <p className="text-note text-muted">토스 결제위젯이 들어갈 자리야.</p>
+        {/* 토스 결제위젯이 그려지는 자리. 불러오는 동안 자리표시자 */}
+        <div className="relative border border-line bg-surface">
+          {!ready && !errors.widget && (
+            <div aria-hidden className="absolute inset-0 flex flex-col gap-3 p-5">
+              <div className="skeleton h-5 w-1/3" />
+              <div className="grid grid-cols-3 gap-2">
+                <div className="skeleton h-12" />
+                <div className="skeleton h-12" />
+                <div className="skeleton h-12" />
+              </div>
+              <div className="skeleton h-4 w-2/3" />
+            </div>
+          )}
+          <div id="payment-method" className="min-h-[240px]" />
+          <div id="agreement" />
         </div>
+        {errors.widget && (
+          <p className="field-error" role="alert">
+            {errors.widget}
+          </p>
+        )}
       </div>
 
       <div>
@@ -124,8 +188,8 @@ export function CheckoutForm() {
         )}
       </div>
 
-      <button type="submit" className="btn btn-primary w-full" disabled={!hydrated || total === 0}>
-        {hydrated ? `${won(total)} 결제` : "결제"}
+      <button type="submit" className="btn btn-primary w-full" disabled={!ready || paying}>
+        {paying ? "결제창 여는 중…" : `${won(amount)} 결제`}
       </button>
     </form>
   );

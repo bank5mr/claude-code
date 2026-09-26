@@ -1,18 +1,28 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { PageTitle } from "@/components/PageTitle";
+import { redirect } from "next/navigation";
+import { PaymentFailure } from "@/components/PaymentFailure";
+import { requireViewer } from "@/lib/guard";
+import { confirmOrder } from "@/lib/orders";
 
-export const metadata: Metadata = { title: "결제 완료" };
+export const metadata: Metadata = { title: "결제 확인" };
 
-// TODO(4단계): paymentKey, orderId, amount를 서버에서 검증하고 승인 API 호출 후 /library로 이동
-export default function CheckoutSuccessPage() {
+// 토스 successUrl: paymentKey, orderId, amount를 서버에서 검증 → 승인 API → paid
+export default async function CheckoutSuccessPage(props: PageProps<"/checkout/success">) {
+  const sp = await props.searchParams;
+  const pick = (k: string) => (typeof sp[k] === "string" ? (sp[k] as string) : null);
+  const q = { paymentKey: pick("paymentKey"), orderId: pick("orderId"), amount: pick("amount") };
+
+  const viewer = await requireViewer("/cart");
+  const result = await confirmOrder(viewer.id, q);
+
+  // 승인 성공 (또는 이미 승인된 주문) → 내 자료로
+  if (result.ok) redirect("/library?paid=1");
+
   return (
-    <div className="wrap pt-8">
-      <PageTitle>결제가 끝났어.</PageTitle>
-      <p className="measure mt-3 text-muted">산 자료는 내 자료에서 바로 내려받을 수 있어.</p>
-      <Link href="/library" className="btn btn-primary mt-6">
-        내 자료로 가기
-      </Link>
-    </div>
+    <PaymentFailure
+      message={result.message}
+      code={result.code}
+      orderId={result.retryable ? q.orderId : null}
+    />
   );
 }
